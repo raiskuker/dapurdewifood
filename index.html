@@ -485,26 +485,7 @@
             localStorage.setItem('kasirku_transactions', JSON.stringify(transactions));
             localStorage.setItem('kasirku_cashflow', JSON.stringify(cashflow));
         }
-		// Contoh cuplikan saat menampilkan list arus kas ke HTML:
-itemDiv.innerHTML = `
-  <div>
-    <p class="font-medium ${item.type === 'in' ? 'text-green-600' : 'text-red-600'}">
-      ${item.description}
-    </p>
-    <span class="text-xs text-gray-400">${item.date}</span>
-  </div>
-  <div class="flex items-center gap-3">
-    <span class="font-bold ${item.type === 'in' ? 'text-green-600' : 'text-red-600'}">
-      ${item.type === 'in' ? '+' : '-'}${formatIDR(item.amount)}
-    </span>
-    <!-- Tombol Hapus -->
-    <button onclick="deleteCashflow('${item.id}')" class="text-gray-400 hover:text-red-500 text-sm p-1">
-      🗑️
-    </button>
-  </div>
-`;
-		
-// --- FUNGSI REFRESH APLIKASI ---
+		// --- FUNGSI REFRESH APLIKASI ---
 function refreshApp() {
   if ('caches' in window) {
     caches.keys().then(function(names) {
