@@ -9,6 +9,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KasirKu Pro - POS & Manajemen Usaha</title>
+	<button onclick="refreshApp()" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium shadow-sm transition">
+  🔄 Cek Update
+</button>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Inter Font -->
@@ -482,7 +485,15 @@
             localStorage.setItem('kasirku_transactions', JSON.stringify(transactions));
             localStorage.setItem('kasirku_cashflow', JSON.stringify(cashflow));
         }
-
+// --- FUNGSI REFRESH APLIKASI ---
+function refreshApp() {
+  if ('caches' in window) {
+    caches.keys().then(function(names) {
+      for (let name of names) caches.delete(name);
+    });
+  }
+  window.location.reload(true);
+}
         // --- UTILS FORMATTER ---
         function formatIDR(amount) {
             return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount);
