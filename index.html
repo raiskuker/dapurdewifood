@@ -485,15 +485,7 @@
             localStorage.setItem('kasirku_transactions', JSON.stringify(transactions));
             localStorage.setItem('kasirku_cashflow', JSON.stringify(cashflow));
         }
-		// --- FUNGSI HAPUS CATATAN KAS ---
-function deleteCashflow(id) {
-  if (confirm("Apakah Anda yakin ingin menghapus catatan kas ini?")) {
-    cashflow = cashflow.filter(item => item.id !== id);
-    saveData();
-    renderCashflow(); 
-  }
-}
-		// --- FUNGSI REFRESH APLIKASI ---
+				// --- FUNGSI REFRESH APLIKASI ---
 function refreshApp() {
   if ('caches' in window) {
     caches.keys().then(function(names) {
