@@ -461,6 +461,33 @@
     <script>
       
         // ==================== PRODUCT MANAGEMENT LOGIC ====================
+		   // ---------------------------------------------
+        // --- INITIAL DEFAULT DATA ---
+        const DEFAULT_PRODUCTS = [
+            { id: 1, name: "Gabin Ice Cream Rasa Strawberry", category: "Dessert", costPrice: 8000, sellPrice: 12000, stock: 10 },
+            { id: 2, name: "Gabin Ice Cream Rasa Matcha", category: "Dessert", costPrice: 8000, sellPrice: 10000, stock: 10 },
+            { id: 3, name: "Gabin Ice Cream Rasa Double Choco", category: "Dessert", costPrice: 8000, sellPrice: 10000, stock: 10 },
+            { id: 4, name: "Gabin Ice Cream Rasa Thai Tea", category: "Dessert", costPrice: 8000, sellPrice: 10000, stock: 10 },
+            { id: 5, name: "Gabin Ice Cream Rasa Milo Oreo", category: "Dessert", costPrice: 8000, sellPrice: 10000, stock: 10 },
+            { id: 6, name: "Gabin Ice Cream Rasa Choco Mint", category: "Dessert", costPrice: 8000, sellPrice: 10000, stock: 10 },
+	    { id: 7, name: "Gabin Ice Cream Rasa Caramel Macciato", category: "Dessert", costPrice: 8000, sellPrice: 10000, stock: 10 },
+            { id: 8, name: "Gabin Ice Cream Rasa Red Velvet", category: "Dessert", costPrice: 8000, sellPrice: 10000, stock: 10 },
+            { id: 9, name: "Gabin Ice Cream Rasa Strawberry Matcha", category: "Dessert", costPrice: 9000, sellPrice: 11000, stock: 10 }
+        ];
+
+        // --- APP STATE ---
+        let products = JSON.parse(localStorage.getItem('kasirku_products')) || DEFAULT_PRODUCTS;
+        let cart = [];
+        let transactions = JSON.parse(localStorage.getItem('kasirku_transactions')) || [];
+        let cashflow = JSON.parse(localStorage.getItem('kasirku_cashflow')) || [];
+        let currentPaymentMethod = 'Tunai';
+        let lastPrintedTransaction = null;
+
+        // Save to LocalStorage
+        function saveData() {
+            localStorage.setItem('kasirku_products', JSON.stringify(products));
+            localStorage.setItem('kasirku_transactions', JSON.stringify(transactions));
+            localStorage.setItem('kasirku_cashflow', JSON.stringify(cashflow));
         function renderProductsTable() {
             const search = document.getElementById('manage-search').value.toLowerCase();
             const tbody = document.getElementById('products-table-body');
@@ -784,33 +811,7 @@
     function formatRupiah(num) {
         return "Rp " + num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     }
-    // ---------------------------------------------
-        // --- INITIAL DEFAULT DATA ---
-        const DEFAULT_PRODUCTS = [
-            { id: 1, name: "Gabin Ice Cream Rasa Strawberry", category: "Dessert", costPrice: 8000, sellPrice: 12000, stock: 10 },
-            { id: 2, name: "Gabin Ice Cream Rasa Matcha", category: "Dessert", costPrice: 8000, sellPrice: 10000, stock: 10 },
-            { id: 3, name: "Gabin Ice Cream Rasa Double Choco", category: "Dessert", costPrice: 8000, sellPrice: 10000, stock: 10 },
-            { id: 4, name: "Gabin Ice Cream Rasa Thai Tea", category: "Dessert", costPrice: 8000, sellPrice: 10000, stock: 10 },
-            { id: 5, name: "Gabin Ice Cream Rasa Milo Oreo", category: "Dessert", costPrice: 8000, sellPrice: 10000, stock: 10 },
-            { id: 6, name: "Gabin Ice Cream Rasa Choco Mint", category: "Dessert", costPrice: 8000, sellPrice: 10000, stock: 10 },
-	    { id: 7, name: "Gabin Ice Cream Rasa Caramel Macciato", category: "Dessert", costPrice: 8000, sellPrice: 10000, stock: 10 },
-            { id: 8, name: "Gabin Ice Cream Rasa Red Velvet", category: "Dessert", costPrice: 8000, sellPrice: 10000, stock: 10 },
-            { id: 9, name: "Gabin Ice Cream Rasa Strawberry Matcha", category: "Dessert", costPrice: 9000, sellPrice: 11000, stock: 10 }
-        ];
-
-        // --- APP STATE ---
-        let products = JSON.parse(localStorage.getItem('kasirku_products')) || DEFAULT_PRODUCTS;
-        let cart = [];
-        let transactions = JSON.parse(localStorage.getItem('kasirku_transactions')) || [];
-        let cashflow = JSON.parse(localStorage.getItem('kasirku_cashflow')) || [];
-        let currentPaymentMethod = 'Tunai';
-        let lastPrintedTransaction = null;
-
-        // Save to LocalStorage
-        function saveData() {
-            localStorage.setItem('kasirku_products', JSON.stringify(products));
-            localStorage.setItem('kasirku_transactions', JSON.stringify(transactions));
-            localStorage.setItem('kasirku_cashflow', JSON.stringify(cashflow));
+ 
         }
 				// --- FUNGSI REFRESH APLIKASI ---
 function refreshApp() {
