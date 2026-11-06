@@ -1142,6 +1142,117 @@ function deleteCashflow(id) {
             renderPOSProducts();
             renderCart();
         }
+		// --- FUNGSI BLUETOOTH PRINTER RPP02N ---
+let bluetoothCharacteristic = null;
+
+async function printToIwarePrinter(transactionData) {
+    if (!transactionData) {
+        alert("Tidak ada data transaksi yang bisa dicetak!");
+        return;
+    }
+
+    try {
+        if (!bluetoothCharacteristic) {
+            const device = await navigator.bluetooth.requestDevice({
+                filters: [{ name: 'RPP02N' }],
+                optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb', 'e7810a71-73ae-499d-8c15-faa9aef0c3f2', '49535343-fe7d-4ae5-8fa9-9fafd265e41e']
+            });
+
+            const server = await device.gatt.connect();
+            const services = await server.getPrimaryServices();
+            let targetCharacteristic = null;
+
+            for (const service of services) {
+                const characteristics = await service.getCharacteristics();
+                for (const characteristic of characteristics) {
+                    if (characteristic.properties.write || characteristic.properties.writeWithoutResponse) {
+                        targetCharacteristic = characteristic;
+                        break;
+                    }
+                }
+                if (targetCharacteristic) break;
+            }
+
+            if (!targetCharacteristic) {
+                throw new Error("Karakteristik printer tidak ditemukan!");
+            }
+            bluetoothCharacteristic = targetCharacteristic;
+        }
+
+        const encoder = new TextEncoder();
+        let commands = [];
+
+        commands.push(0x1B, 0x40); // Inisialisasi
+        
+        // Header
+        commands.push(0x1B, 0x61, 0x01); 
+        commands.push(encoder.encode("DAPUR DEWI (DD) FOOD\n"));
+        commands.push(encoder.encode("Jl. Syech Yusuf 3, Kab. Gowa\n"));
+        commands.push(encoder.encode("Telp: 0853-4114-0002\n"));
+        commands.push(encoder.encode("--------------------------------\n"));
+
+        // Detail
+        commands.push(0x1B, 0x61, 0x00);
+        commands.push(encoder.encode(`No. Nota : ${transactionData.id}\n`));
+        commands.push(encoder.encode(`Waktu    : ${transactionData.date}\n`));
+        commands.push(encoder.encode(`Kasir    : Dewi (Admin)\n`));
+        commands.push(encoder.encode("--------------------------------\n"));
+
+        // Item Belanja
+        transactionData.items.forEach(item => {
+            commands.push(encoder.encode(`${item.name}\n`));
+            commands.push(encoder.encode(`  ${item.qty}x @${formatRupiah(item.sellPrice)}   ${formatRupiah(item.qty * item.sellPrice)}\n`));
+        });
+
+        commands.push(encoder.encode("--------------------------------\n"));
+        commands.push(encoder.encode(`Subtotal   : ${formatRupiah(transactionData.subtotal)}\n`));
+        commands.push(encoder.encode(`Diskon     : ${formatRupiah(transactionData.discount)}\n`));
+        commands.push(encoder.encode(`TOTAL      : ${formatRupiah(transactionData.total)}\n`));
+        commands.push(encoder.encode(`Metode     : ${transactionData.method}\n`));
+        
+        if(transactionData.method === 'Tunai') {
+            commands.push(encoder.encode(`Bayar      : ${formatRupiah(transactionData.cash)}\n`));
+            commands.push(encoder.encode(`Kembalian  : ${formatRupiah(transactionData.change)}\n`));
+        }
+
+        commands.push(encoder.encode("--------------------------------\n"));
+        commands.push(0x1B, 0x61, 0x01);
+        commands.push(encoder.encode("*** TERIMA KASIH ATAS KUNJUNGANNYA ***\n"));
+        commands.push(encoder.encode("Barang yang sudah dibeli\ntidak dapat ditukar/dikembalikan.\n\n\n"));
+        commands.push(0x1D, 0x56, 0x41, 0x10);
+
+        let length = commands.reduce((acc, val) => acc + (val instanceof Uint8Array ? val.length : 1), 0);
+        let payload = new Uint8Array(length);
+        let offset = 0;
+        commands.forEach(val => {
+            if (val instanceof Uint8Array) {
+                payload.set(val, offset);
+                offset += val.length;
+            } else {
+                payload[offset] = val;
+                offset++;
+            }
+        });
+
+        const CHUNK_SIZE = 512;
+        for (let i = 0; i < payload.length; i += CHUNK_SIZE) {
+            let chunk = payload.slice(i, i + CHUNK_SIZE);
+            await bluetoothCharacteristic.writeValue(chunk);
+        }
+
+        closeReceiptModal();
+        clearCart();
+
+    } catch (error) {
+        console.error("Gagal mencetak:", error);
+        alert("Gagal mencetak ke printer: " + error.message);
+        bluetoothCharacteristic = null;
+    }
+}
+
+function formatRupiah(num) {
+    return "Rp " + num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
 
     </script>
 </body>
