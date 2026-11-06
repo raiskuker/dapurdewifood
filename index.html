@@ -488,6 +488,8 @@
             localStorage.setItem('kasirku_products', JSON.stringify(products));
             localStorage.setItem('kasirku_transactions', JSON.stringify(transactions));
             localStorage.setItem('kasirku_cashflow', JSON.stringify(cashflow));
+		}
+		
         function renderProductsTable() {
             const search = document.getElementById('manage-search').value.toLowerCase();
             const tbody = document.getElementById('products-table-body');
