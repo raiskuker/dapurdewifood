@@ -400,7 +400,7 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
-            
+
             <!-- Printable Thermal Area (Width 80mm styled) -->
             <div class="p-6 overflow-y-auto bg-slate-100 flex justify-center">
                 <div id="printable-receipt" class="bg-white w-[80mm] p-4 text-xs font-mono text-slate-900 shadow-sm border border-slate-200">
@@ -436,14 +436,13 @@
                 </div>
             </div>
 
-            <!-- KODE BARU -->
-<div class="p-4 bg-white border-t border-slate-100 flex space-x-3 no-print">
-    <button onclick="closeReceiptModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl text-sm">Tutup</button>
-    <button onclick="printToIwarePrinter(currentTransactionData)" class="flex-1 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-xl text-sm shadow-md flex items-center justify-center space-x-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-        <span>Cetak ke Bluetooth</span>
-    </button>
-</div>
+            <div class="p-4 bg-white border-t border-slate-100 flex space-x-3 no-print">
+                <button onclick="closeReceiptModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl text-sm">Tutup</button>
+                <button onclick="printReceiptNow()" class="flex-1 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-xl text-sm shadow-md flex items-center justify-center space-x-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                    <span>Cetak Nota</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -458,11 +457,7 @@
     </div>
 
     <!-- JAVASCRIPT APP LOGIC -->
-
-    function formatRupiah(num) {
-        return "Rp " + num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    }
-    // ---------------------------------------------
+    <script>
         // --- INITIAL DEFAULT DATA ---
         const DEFAULT_PRODUCTS = [
             { id: 1, name: "Gabin Ice Cream Rasa Strawberry", category: "Dessert", costPrice: 8000, sellPrice: 12000, stock: 10 },
@@ -490,7 +485,26 @@
             localStorage.setItem('kasirku_transactions', JSON.stringify(transactions));
             localStorage.setItem('kasirku_cashflow', JSON.stringify(cashflow));
         }
-				// --- FUNGSI REFRESH APLIKASI ---
+		// Contoh cuplikan saat menampilkan list arus kas ke HTML:
+itemDiv.innerHTML = `
+  <div>
+    <p class="font-medium ${item.type === 'in' ? 'text-green-600' : 'text-red-600'}">
+      ${item.description}
+    </p>
+    <span class="text-xs text-gray-400">${item.date}</span>
+  </div>
+  <div class="flex items-center gap-3">
+    <span class="font-bold ${item.type === 'in' ? 'text-green-600' : 'text-red-600'}">
+      ${item.type === 'in' ? '+' : '-'}${formatIDR(item.amount)}
+    </span>
+    <!-- Tombol Hapus -->
+    <button onclick="deleteCashflow('${item.id}')" class="text-gray-400 hover:text-red-500 text-sm p-1">
+      🗑️
+    </button>
+  </div>
+`;
+		
+// --- FUNGSI REFRESH APLIKASI ---
 function refreshApp() {
   if ('caches' in window) {
     caches.keys().then(function(names) {
@@ -716,17 +730,7 @@ function refreshApp() {
             const discount = parseFloat(document.getElementById('cart-discount').value) || 0;
             const total = Math.max(0, subtotal - discount);
             const cashGiven = currentPaymentMethod === 'Tunai' ? (parseFloat(document.getElementById('cart-cash-given').value) || 0) : total;
-window.currentTransactionData = {
-        id: "TRX-" + Math.floor(100000 + Math.random() * 900000),
-        date: new Date().toLocaleString("id-ID", { dateStyle: 'medium', timeStyle: 'short' }),
-        items: [...cart],
-        subtotal: subtotal,
-        discount: discount,
-        total: total,
-        method: currentPaymentMethod,
-        cash: cashGiven,
-        change: Math.max(0, cashGiven - total)
-    };
+
             if (currentPaymentMethod === 'Tunai' && cashGiven < total) {
                 showNotification('Pembayaran Kurang', 'Jumlah uang tunai yang diberikan kurang dari total belanja.');
                 return;
@@ -789,7 +793,7 @@ function deleteCashflow(id) {
             document.getElementById('receipt-id').innerText = trx.id;
             const d = new Date(trx.date);
             document.getElementById('receipt-date').innerText = d.toLocaleDateString('id-ID') + ', ' + d.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
-            
+
             const itemsTable = document.getElementById('receipt-items-table');
             itemsTable.innerHTML = '';
             trx.items.forEach(item => {
@@ -933,7 +937,7 @@ function deleteCashflow(id) {
         // ==================== REPORTS & CASHFLOW LOGIC ====================
         function renderReportsData() {
             const todayStr = new Date().toDateString();
-            
+
             // Filter today transactions
             const todayTrxs = transactions.filter(t => new Date(t.date).toDateString() === todayStr);
             const todayRevenue = todayTrxs.reduce((sum, t) => sum + t.total, 0);
@@ -1045,130 +1049,7 @@ function deleteCashflow(id) {
         window.onload = function() {
             renderPOSProducts();
             renderCart();
-        };
-	// --- INIT APP ON LOAD ---
-    window.onload = function() {
-        renderPOSProducts();
-        renderCart();
-    };
-
-    // --- FUNGSI BLUETOOTH PRINTER RPP02N ---
-    let bluetoothCharacteristic = null;
-
-    async function printToIwarePrinter(transactionData) {
-        if (!transactionData) {
-            alert("Tidak ada data transaksi yang bisa dicetak!");
-            return;
         }
-
-        try {
-            if (!bluetoothCharacteristic) {
-                const device = await navigator.bluetooth.requestDevice({
-                    filters: [{ name: 'RPP02N' }],
-                    optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb', 'e7810a71-73ae-499d-8c15-faa9aef0c3f2', '49535343-fe7d-4ae5-8fa9-9fafd265e41e']
-                });
-
-                const server = await device.gatt.connect();
-                const services = await server.getPrimaryServices();
-                let targetCharacteristic = null;
-
-                for (const service of services) {
-                    const characteristics = await service.getCharacteristics();
-                    for (const characteristic of characteristics) {
-                        if (characteristic.properties.write || characteristic.properties.writeWithoutResponse) {
-                            targetCharacteristic = characteristic;
-                            break;
-                        }
-                    }
-                    if (targetCharacteristic) break;
-                }
-
-                if (!targetCharacteristic) {
-                    throw new Error("Karakteristik printer tidak ditemukan!");
-                }
-                bluetoothCharacteristic = targetCharacteristic;
-            }
-
-            const encoder = new TextEncoder();
-            let commands = [];
-
-            commands.push(0x1B, 0x40); // Inisialisasi
-            
-            // Header
-            commands.push(0x1B, 0x61, 0x01); 
-            commands.push(encoder.encode("DAPUR DEWI (DD) FOOD\n"));
-            commands.push(encoder.encode("Jl. Syech Yusuf 3, Kab. Gowa\n"));
-            commands.push(encoder.encode("Telp: 0853-4114-0002\n"));
-            commands.push(encoder.encode("--------------------------------\n"));
-
-            // Detail
-            commands.push(0x1B, 0x61, 0x00);
-            commands.push(encoder.encode(`No. Nota : ${transactionData.id}\n`));
-            commands.push(encoder.encode(`Waktu    : ${transactionData.date}\n`));
-            commands.push(encoder.encode(`Kasir    : Dewi (Admin)\n`));
-            commands.push(encoder.encode("--------------------------------\n"));
-
-            // Item Belanja
-            transactionData.items.forEach(item => {
-                commands.push(encoder.encode(`${item.name}\n`));
-                commands.push(encoder.encode(`  ${item.qty}x @${formatRupiah(item.sellPrice)}   ${formatRupiah(item.qty * item.sellPrice)}\n`));
-            });
-
-            commands.push(encoder.encode("--------------------------------\n"));
-            commands.push(encoder.encode(`Subtotal   : ${formatRupiah(transactionData.subtotal)}\n`));
-            commands.push(encoder.encode(`Diskon     : ${formatRupiah(transactionData.discount)}\n`));
-            commands.push(encoder.encode(`TOTAL      : ${formatRupiah(transactionData.total)}\n`));
-            commands.push(encoder.encode(`Metode     : ${transactionData.method}\n`));
-            
-            if(transactionData.method === 'Tunai') {
-                commands.push(encoder.encode(`Bayar      : ${formatRupiah(transactionData.cash)}\n`));
-                commands.push(encoder.encode(`Kembalian  : ${formatRupiah(transactionData.change)}\n`));
-            }
-
-            commands.push(encoder.encode("--------------------------------\n"));
-            commands.push(0x1B, 0x61, 0x01);
-            commands.push(encoder.encode("*** TERIMA KASIH ATAS KUNJUNGANNYA ***\n"));
-            commands.push(encoder.encode("Barang yang sudah dibeli\ntidak dapat ditukar/dikembalikan.\n\n\n"));
-            commands.push(0x1D, 0x56, 0x41, 0x10);
-
-            let length = commands.reduce((acc, val) => acc + (val instanceof Uint8Array ? val.length : 1), 0);
-            let payload = new Uint8Array(length);
-            let offset = 0;
-            commands.forEach(val => {
-                if (val instanceof Uint8Array) {
-                    payload.set(val, offset);
-                    offset += val.length;
-                } else {
-                    payload[offset] = val;
-                    offset++;
-                }
-            });
-
-            const CHUNK_SIZE = 512;
-            for (let i = 0; i < payload.length; i += CHUNK_SIZE) {
-                let chunk = payload.slice(i, i + CHUNK_SIZE);
-                await bluetoothCharacteristic.writeValue(chunk);
-            }
-
-            closeReceiptModal();
-            clearCart();
-
-        } catch (error) {
-            console.error("Gagal mencetak:", error);
-            alert("Gagal mencetak ke printer: " + error.message);
-            bluetoothCharacteristic = null;
-        }
-    }
-
-    function formatRupiah(num) {
-        return "Rp " + num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    }
-
-    // --- INIT APP ON LOAD ---
-    window.onload = function() {
-        renderPOSProducts();
-        renderCart();
-    }
-</script>
+    </script>
 </body>
 </html>
