@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="Kasir POS">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dapur Dewi</title>
+    <title>Creamery Co</title>
 	<button onclick="refreshApp()" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium shadow-sm transition">
   🔄 Cek Update
 </button>
@@ -79,7 +79,7 @@
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg text-slate-900 leading-tight">Dapur Dewi</h1>
+                    <h1 class="font-bold text-lg text-slate-900 leading-tight">Creamery Co</h1>
                     <p class="text-xs text-slate-500">Food</p>
                 </div>
             </div>
@@ -405,7 +405,7 @@
             <div class="p-6 overflow-y-auto bg-slate-100 flex justify-center">
                 <div id="printable-receipt" class="bg-white w-[80mm] p-4 text-xs font-mono text-slate-900 shadow-sm border border-slate-200">
                     <div class="text-center space-y-1 pb-3 border-b border-dashed border-slate-300">
-                        <h2 class="font-bold text-sm">DAPUR DEWI (DD) FOOD</h2>
+                        <h2 class="font-bold text-sm">Creamery Co</h2>
                         <p class="text-[10px] text-slate-500">Jl. Syech Yusuf 3, Kab. Gowa</p>
                         <p class="text-[10px] text-slate-500">Telp: 0853-4114-0002</p>
                     </div>
@@ -751,7 +751,7 @@
 
             commands.push(0x1B, 0x40); 
             commands.push(0x1B, 0x61, 0x01); 
-            commands.push(encoder.encode("DAPUR DEWI (DD) FOOD\n"));
+            commands.push(encoder.encode("Creamery Co\n"));
             commands.push(encoder.encode("Jl. Syech Yusuf 3, Kab. Gowa\n"));
             commands.push(encoder.encode("Telp: 0853-4114-0002\n"));
             commands.push(encoder.encode("--------------------------------\n"));
@@ -1173,7 +1173,7 @@ async function printToIwarePrinter(transactionData) {
         
         // Header
         commands.push(0x1B, 0x61, 0x01); 
-        commands.push(encoder.encode("DAPUR DEWI (DD) FOOD\n"));
+        commands.push(encoder.encode("Creamery Co\n"));
         commands.push(encoder.encode("Jl. Syech Yusuf 3, Kab. Gowa\n"));
         commands.push(encoder.encode("Telp: 0853-4114-0002\n"));
         commands.push(encoder.encode("--------------------------------\n"));
