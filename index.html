@@ -1163,6 +1163,12 @@ function deleteCashflow(id) {
     function formatRupiah(num) {
         return "Rp " + num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     }
-	</script>
+
+    // --- INIT APP ON LOAD ---
+    window.onload = function() {
+        renderPOSProducts();
+        renderCart();
+    }
+</script>
 </body>
 </html>
