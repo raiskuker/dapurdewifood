@@ -721,8 +721,7 @@
         try {
             if (!bluetoothCharacteristic) {
                 const device = await navigator.bluetooth.requestDevice({
-                    filters: [{ name: 'RPP02N' }],
-                    optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb', 'e7810a71-73ae-499d-8c15-faa9aef0c3f2', '49535343-fe7d-4ae5-8fa9-9fafd265e41e']
+                    filters: [{ name: 'RPP02N' }]
                 });
 
                 const server = await device.gatt.connect();
@@ -1141,8 +1140,7 @@ async function printToIwarePrinter(transactionData) {
     try {
         if (!bluetoothCharacteristic) {
             const device = await navigator.bluetooth.requestDevice({
-                filters: [{ name: 'RPP02N' }],
-                optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb', 'e7810a71-73ae-499d-8c15-faa9aef03f2', '49535343-fe7d-4ae5-8fa9-9fafd265e41e']
+                filters: [{ name: 'RPP02N' }]
             });
 
             const server = await device.gatt.connect();
