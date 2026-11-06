@@ -460,7 +460,234 @@
     <!-- JAVASCRIPT APP LOGIC -->
     <script>
     // --- TEMPEL FUNGSI BLUETOOTH RPP02N DI SINI ---
-    let bluetoothCharacteristic = null;
+   
+        // ==================== PRODUCT MANAGEMENT LOGIC ====================
+        function renderProductsTable() {
+            const search = document.getElementById('manage-search').value.toLowerCase();
+            const tbody = document.getElementById('products-table-body');
+            tbody.innerHTML = '';
+
+            const filtered = products.filter(p => p.name.toLowerCase().includes(search) || p.category.toLowerCase().includes(search));
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">Tidak ada produk ditemukan.</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(p => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                        <td class="p-4 font-semibold text-slate-800">${p.name}</td>
+                        <td class="p-4"><span class="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs">${p.category}</span></td>
+                        <td class="p-4 text-right text-slate-600">${formatIDR(p.costPrice)}</td>
+                        <td class="p-4 text-right font-medium text-orange-600">${formatIDR(p.sellPrice)}</td>
+                        <td class="p-4 text-center">
+                            <span class="px-2.5 py-1 ${p.stock <= 5 ? 'bg-red-50 text-red-600 font-bold' : 'bg-emerald-50 text-emerald-600'} rounded-lg text-xs">${p.stock} unit</span>
+                        </td>
+                        <td class="p-4 text-center space-x-2">
+                            <button onclick="editProduct(${p.id})" class="px-2.5 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-medium">Edit</button>
+                            <button onclick="deleteProduct(${p.id})" class="px-2.5 py-1 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-medium">Hapus</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function openProductModal(id = null) {
+            const modal = document.getElementById('product-modal');
+            const title = document.getElementById('product-modal-title');
+            document.getElementById('product-form').reset();
+
+            if (id) {
+                title.innerText = "Edit Produk";
+                const p = products.find(item => item.id === id);
+                if (p) {
+                    document.getElementById('product-id').value = p.id;
+                    document.getElementById('product-name').value = p.name;
+                    document.getElementById('product-category').value = p.category;
+                    document.getElementById('product-cost').value = p.costPrice;
+                    document.getElementById('product-price').value = p.sellPrice;
+                    document.getElementById('product-stock').value = p.stock;
+                }
+            } else {
+                title.innerText = "Tambah Produk Baru";
+                document.getElementById('product-id').value = '';
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closeProductModal() {
+            document.getElementById('product-modal').classList.add('hidden');
+        }
+
+        function saveProduct(event) {
+            event.preventDefault();
+            const id = document.getElementById('product-id').value;
+            const name = document.getElementById('product-name').value;
+            const category = document.getElementById('product-category').value;
+            const costPrice = parseFloat(document.getElementById('product-cost').value);
+            const sellPrice = parseFloat(document.getElementById('product-price').value);
+            const stock = parseInt(document.getElementById('product-stock').value);
+
+            if (id) {
+                // Update
+                const p = products.find(item => item.id == id);
+                if (p) {
+                    p.name = name;
+                    p.category = category;
+                    p.costPrice = costPrice;
+                    p.sellPrice = sellPrice;
+                    p.stock = stock;
+                }
+            } else {
+                // Add new
+                const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
+                products.push({
+                    id: newId,
+                    name,
+                    category,
+                    costPrice,
+                    sellPrice,
+                    stock
+                });
+            }
+
+            saveData();
+            closeProductModal();
+            renderProductsTable();
+            renderPOSProducts();
+            showNotification('Berhasil', 'Data produk berhasil disimpan.');
+        }
+
+        function editProduct(id) {
+            openProductModal(id);
+        }
+
+        function deleteProduct(id) {
+            products = products.filter(p => p.id !== id);
+            saveData();
+            renderProductsTable();
+            renderPOSProducts();
+            showNotification('Berhasil', 'Produk berhasil dihapus.');
+        }
+
+        // ==================== REPORTS & CASHFLOW LOGIC ====================
+        function renderReportsData() {
+            const todayStr = new Date().toDateString();
+
+            // Filter today transactions
+            const todayTrxs = transactions.filter(t => new Date(t.date).toDateString() === todayStr);
+            const todayRevenue = todayTrxs.reduce((sum, t) => sum + t.total, 0);
+
+            // Estimate profit today
+            let todayProfit = 0;
+            todayTrxs.forEach(t => {
+                t.items.forEach(item => {
+                    const prod = products.find(p => p.id === item.id);
+                    const cost = prod ? prod.costPrice : 0;
+                    todayProfit += (item.sellPrice - cost) * item.qty;
+                });
+            });
+
+            // Total stock asset value
+            const totalStockVal = products.reduce((sum, p) => sum + (p.costPrice * p.stock), 0);
+
+            document.getElementById('stat-today-revenue').innerText = formatIDR(todayRevenue);
+            document.getElementById('stat-today-tx').innerText = todayTrxs.length;
+            document.getElementById('stat-today-profit').innerText = formatIDR(todayProfit);
+            document.getElementById('stat-total-stock-val').innerText = formatIDR(totalStockVal);
+
+            // Render Transaction History
+            const txList = document.getElementById('transaction-history-list');
+            if (transactions.length === 0) {
+                txList.innerHTML = `<div class="text-center text-slate-400 py-12 text-sm">Belum ada riwayat transaksi.</div>`;
+            } else {
+                txList.innerHTML = '';
+                transactions.forEach(t => {
+                    const d = new Date(t.date);
+                    const itemsSummary = t.items.map(i => `${i.qty}x ${i.name}`).join(', ');
+                    txList.innerHTML = txList.innerHTML + `
+                        <div class="py-3 space-y-1">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="font-bold text-slate-800">${t.id}</span>
+                                <span class="text-slate-400">${d.toLocaleDateString('id-ID')} ${d.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</span>
+                            </div>
+                            <p class="text-xs text-slate-600 line-clamp-1">${itemsSummary}</p>
+                            <div class="flex justify-between items-center pt-1 text-xs">
+                                <span class="px-2 py-0.5 bg-orange-50 text-orange-600 rounded font-medium">${t.paymentMethod}</span>
+                                <span class="font-bold text-emerald-600">${formatIDR(t.total)}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            // Render Cash Flow Log
+            const cfList = document.getElementById('cashflow-list');
+            if (cashflow.length === 0) {
+                cfList.innerHTML = `<div class="text-center text-slate-400 py-12 text-sm">Belum ada catatan arus kas.</div>`;
+            } else {
+                cfList.innerHTML = '';
+                cashflow.forEach(cf => {
+                    const d = new Date(cf.date);
+                    const isIn = cf.type === 'in';
+                    cfList.innerHTML = cfList.innerHTML + `
+                        <div class="py-3 flex items-center justify-between">
+                            <div class="space-y-0.5 pr-2">
+                                <div class="flex items-center space-x-2">
+                                    <span class="w-2 h-2 rounded-full ${isIn ? 'bg-emerald-500' : 'bg-red-500'}"></span>
+                                    <h5 class="font-semibold text-slate-800 text-xs sm:text-sm">${cf.description}</h5>
+                                </div>
+                                <span class="text-[10px] text-slate-400 block pl-4">${d.toLocaleDateString('id-ID')} ${d.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</span>
+                            </div>
+                            <span class="font-bold text-xs sm:text-sm ${isIn ? 'text-emerald-600' : 'text-red-600'}">${isIn ? '+' : '-'}${formatIDR(cf.amount)}</span>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function clearTransactions() {
+            transactions = [];
+            saveData();
+            renderReportsData();
+            showNotification('Berhasil', 'Riwayat transaksi dikosongkan.');
+        }
+
+        function openCashFlowModal() {
+            document.getElementById('cashflow-modal').classList.remove('hidden');
+        }
+
+        function closeCashFlowModal() {
+            document.getElementById('cashflow-modal').classList.add('hidden');
+        }
+
+        function saveCashFlow(event) {
+            event.preventDefault();
+            const type = document.getElementById('cf-type').value;
+            const amount = parseFloat(document.getElementById('cf-amount').value);
+            const description = document.getElementById('cf-desc').value;
+
+            cashflow.unshift({
+                id: 'CF-' + Math.floor(100000 + Math.random() * 900000),
+                date: new Date().toISOString(),
+                type,
+                amount,
+                description
+            });
+
+            saveData();
+            closeCashFlowModal();
+            renderReportsData();
+            showNotification('Berhasil', 'Catatan arus kas berhasil disimpan.');
+        }
+
+        // --- INIT APP ON LOAD ---
+        window.onload = function() {
+            renderPOSProducts();
+            renderCart();
+        }
+		 let bluetoothCharacteristic = null;
 
     async function printToIwarePrinter(transactionData) {
         try {
@@ -1008,233 +1235,6 @@ async function printToIwarePrinter(transactionData) {
         bluetoothCharacteristic = null;
     }
 }
-
-        // ==================== PRODUCT MANAGEMENT LOGIC ====================
-        function renderProductsTable() {
-            const search = document.getElementById('manage-search').value.toLowerCase();
-            const tbody = document.getElementById('products-table-body');
-            tbody.innerHTML = '';
-
-            const filtered = products.filter(p => p.name.toLowerCase().includes(search) || p.category.toLowerCase().includes(search));
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">Tidak ada produk ditemukan.</td></tr>`;
-                return;
-            }
-
-            filtered.forEach(p => {
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-                        <td class="p-4 font-semibold text-slate-800">${p.name}</td>
-                        <td class="p-4"><span class="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs">${p.category}</span></td>
-                        <td class="p-4 text-right text-slate-600">${formatIDR(p.costPrice)}</td>
-                        <td class="p-4 text-right font-medium text-orange-600">${formatIDR(p.sellPrice)}</td>
-                        <td class="p-4 text-center">
-                            <span class="px-2.5 py-1 ${p.stock <= 5 ? 'bg-red-50 text-red-600 font-bold' : 'bg-emerald-50 text-emerald-600'} rounded-lg text-xs">${p.stock} unit</span>
-                        </td>
-                        <td class="p-4 text-center space-x-2">
-                            <button onclick="editProduct(${p.id})" class="px-2.5 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-medium">Edit</button>
-                            <button onclick="deleteProduct(${p.id})" class="px-2.5 py-1 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-medium">Hapus</button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-
-        function openProductModal(id = null) {
-            const modal = document.getElementById('product-modal');
-            const title = document.getElementById('product-modal-title');
-            document.getElementById('product-form').reset();
-
-            if (id) {
-                title.innerText = "Edit Produk";
-                const p = products.find(item => item.id === id);
-                if (p) {
-                    document.getElementById('product-id').value = p.id;
-                    document.getElementById('product-name').value = p.name;
-                    document.getElementById('product-category').value = p.category;
-                    document.getElementById('product-cost').value = p.costPrice;
-                    document.getElementById('product-price').value = p.sellPrice;
-                    document.getElementById('product-stock').value = p.stock;
-                }
-            } else {
-                title.innerText = "Tambah Produk Baru";
-                document.getElementById('product-id').value = '';
-            }
-            modal.classList.remove('hidden');
-        }
-
-        function closeProductModal() {
-            document.getElementById('product-modal').classList.add('hidden');
-        }
-
-        function saveProduct(event) {
-            event.preventDefault();
-            const id = document.getElementById('product-id').value;
-            const name = document.getElementById('product-name').value;
-            const category = document.getElementById('product-category').value;
-            const costPrice = parseFloat(document.getElementById('product-cost').value);
-            const sellPrice = parseFloat(document.getElementById('product-price').value);
-            const stock = parseInt(document.getElementById('product-stock').value);
-
-            if (id) {
-                // Update
-                const p = products.find(item => item.id == id);
-                if (p) {
-                    p.name = name;
-                    p.category = category;
-                    p.costPrice = costPrice;
-                    p.sellPrice = sellPrice;
-                    p.stock = stock;
-                }
-            } else {
-                // Add new
-                const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
-                products.push({
-                    id: newId,
-                    name,
-                    category,
-                    costPrice,
-                    sellPrice,
-                    stock
-                });
-            }
-
-            saveData();
-            closeProductModal();
-            renderProductsTable();
-            renderPOSProducts();
-            showNotification('Berhasil', 'Data produk berhasil disimpan.');
-        }
-
-        function editProduct(id) {
-            openProductModal(id);
-        }
-
-        function deleteProduct(id) {
-            products = products.filter(p => p.id !== id);
-            saveData();
-            renderProductsTable();
-            renderPOSProducts();
-            showNotification('Berhasil', 'Produk berhasil dihapus.');
-        }
-
-        // ==================== REPORTS & CASHFLOW LOGIC ====================
-        function renderReportsData() {
-            const todayStr = new Date().toDateString();
-
-            // Filter today transactions
-            const todayTrxs = transactions.filter(t => new Date(t.date).toDateString() === todayStr);
-            const todayRevenue = todayTrxs.reduce((sum, t) => sum + t.total, 0);
-
-            // Estimate profit today
-            let todayProfit = 0;
-            todayTrxs.forEach(t => {
-                t.items.forEach(item => {
-                    const prod = products.find(p => p.id === item.id);
-                    const cost = prod ? prod.costPrice : 0;
-                    todayProfit += (item.sellPrice - cost) * item.qty;
-                });
-            });
-
-            // Total stock asset value
-            const totalStockVal = products.reduce((sum, p) => sum + (p.costPrice * p.stock), 0);
-
-            document.getElementById('stat-today-revenue').innerText = formatIDR(todayRevenue);
-            document.getElementById('stat-today-tx').innerText = todayTrxs.length;
-            document.getElementById('stat-today-profit').innerText = formatIDR(todayProfit);
-            document.getElementById('stat-total-stock-val').innerText = formatIDR(totalStockVal);
-
-            // Render Transaction History
-            const txList = document.getElementById('transaction-history-list');
-            if (transactions.length === 0) {
-                txList.innerHTML = `<div class="text-center text-slate-400 py-12 text-sm">Belum ada riwayat transaksi.</div>`;
-            } else {
-                txList.innerHTML = '';
-                transactions.forEach(t => {
-                    const d = new Date(t.date);
-                    const itemsSummary = t.items.map(i => `${i.qty}x ${i.name}`).join(', ');
-                    txList.innerHTML = txList.innerHTML + `
-                        <div class="py-3 space-y-1">
-                            <div class="flex justify-between items-center text-xs">
-                                <span class="font-bold text-slate-800">${t.id}</span>
-                                <span class="text-slate-400">${d.toLocaleDateString('id-ID')} ${d.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</span>
-                            </div>
-                            <p class="text-xs text-slate-600 line-clamp-1">${itemsSummary}</p>
-                            <div class="flex justify-between items-center pt-1 text-xs">
-                                <span class="px-2 py-0.5 bg-orange-50 text-orange-600 rounded font-medium">${t.paymentMethod}</span>
-                                <span class="font-bold text-emerald-600">${formatIDR(t.total)}</span>
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-
-            // Render Cash Flow Log
-            const cfList = document.getElementById('cashflow-list');
-            if (cashflow.length === 0) {
-                cfList.innerHTML = `<div class="text-center text-slate-400 py-12 text-sm">Belum ada catatan arus kas.</div>`;
-            } else {
-                cfList.innerHTML = '';
-                cashflow.forEach(cf => {
-                    const d = new Date(cf.date);
-                    const isIn = cf.type === 'in';
-                    cfList.innerHTML = cfList.innerHTML + `
-                        <div class="py-3 flex items-center justify-between">
-                            <div class="space-y-0.5 pr-2">
-                                <div class="flex items-center space-x-2">
-                                    <span class="w-2 h-2 rounded-full ${isIn ? 'bg-emerald-500' : 'bg-red-500'}"></span>
-                                    <h5 class="font-semibold text-slate-800 text-xs sm:text-sm">${cf.description}</h5>
-                                </div>
-                                <span class="text-[10px] text-slate-400 block pl-4">${d.toLocaleDateString('id-ID')} ${d.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</span>
-                            </div>
-                            <span class="font-bold text-xs sm:text-sm ${isIn ? 'text-emerald-600' : 'text-red-600'}">${isIn ? '+' : '-'}${formatIDR(cf.amount)}</span>
-                        </div>
-                    `;
-                });
-            }
-        }
-
-        function clearTransactions() {
-            transactions = [];
-            saveData();
-            renderReportsData();
-            showNotification('Berhasil', 'Riwayat transaksi dikosongkan.');
-        }
-
-        function openCashFlowModal() {
-            document.getElementById('cashflow-modal').classList.remove('hidden');
-        }
-
-        function closeCashFlowModal() {
-            document.getElementById('cashflow-modal').classList.add('hidden');
-        }
-
-        function saveCashFlow(event) {
-            event.preventDefault();
-            const type = document.getElementById('cf-type').value;
-            const amount = parseFloat(document.getElementById('cf-amount').value);
-            const description = document.getElementById('cf-desc').value;
-
-            cashflow.unshift({
-                id: 'CF-' + Math.floor(100000 + Math.random() * 900000),
-                date: new Date().toISOString(),
-                type,
-                amount,
-                description
-            });
-
-            saveData();
-            closeCashFlowModal();
-            renderReportsData();
-            showNotification('Berhasil', 'Catatan arus kas berhasil disimpan.');
-        }
-
-        // --- INIT APP ON LOAD ---
-        window.onload = function() {
-            renderPOSProducts();
-            renderCart();
-        }
     </script>
 </body>
 </html>
