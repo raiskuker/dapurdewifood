@@ -807,6 +807,11 @@ function refreshApp() {
                 showNotification('Keranjang Kosong', 'Tambahkan minimal 1 produk ke keranjang sebelum melakukan pembayaran.');
                 return;
             }
+
+            const subtotal = cart.reduce((sum, item) => sum + (item.sellPrice * item.qty), 0);
+            const discount = parseFloat(document.getElementById('cart-discount').value) || 0;
+            const total = Math.max(0, subtotal - discount);
+            const cashGiven = currentPaymentMethod === 'Tunai' ? (parseFloat(document.getElementById('cart-cash-given').value) || 0) : total;
 window.currentTransactionData = {
         id: "TRX-" + Math.floor(100000 + Math.random() * 900000),
         date: new Date().toLocaleString("id-ID", { dateStyle: 'medium', timeStyle: 'short' }),
@@ -818,11 +823,6 @@ window.currentTransactionData = {
         cash: cashGiven,
         change: Math.max(0, cashGiven - total)
     };
-            const subtotal = cart.reduce((sum, item) => sum + (item.sellPrice * item.qty), 0);
-            const discount = parseFloat(document.getElementById('cart-discount').value) || 0;
-            const total = Math.max(0, subtotal - discount);
-            const cashGiven = currentPaymentMethod === 'Tunai' ? (parseFloat(document.getElementById('cart-cash-given').value) || 0) : total;
-
             if (currentPaymentMethod === 'Tunai' && cashGiven < total) {
                 showNotification('Pembayaran Kurang', 'Jumlah uang tunai yang diberikan kurang dari total belanja.');
                 return;
