@@ -718,16 +718,53 @@
 		 let bluetoothCharacteristic = null;
 
     async function printToIwarePrinter(transactionData) {
-        try {
-            if (!bluetoothCharacteristic) {
-                const device = await navigator.bluetooth.requestDevice({
-                    filters: [{ name: 'RPP02N' }]
-                });
+    try {
+        if (!bluetoothCharacteristic) {
+            // Daftar UUID service yang biasa digunakan oleh printer thermal Bluetooth (ESC/POS)
+            const printerServiceUUIDs = [
+                '000018f0-0000-1000-8000-00805f9b34fb', // Umum untuk printer ESC/POS
+                '49535343-fe7d-4ae5-8fa9-9fafd205e455', // Umum untuk modul BLE printer (ISSC)
+                '0000ff00-0000-1000-8000-00805f9b34fb', // Custom serial port service
+                'e7810a71-73ae-499d-8c15-faa9aef0c3f2'  // Alternatif printer service
+            ];
 
-                const server = await device.gatt.connect();
+            const device = await navigator.bluetooth.requestDevice({
+                // Menggunakan namePrefix agar bisa mendeteksi berbagai seri printer (RPP, Iware, POS, dll)
+                // Atau gunakan acceptAllDevices: true jika ingin memunculkan semua perangkat Bluetooth di sekitar
+                filters: [
+                    { namePrefix: 'RPP' },
+                    { namePrefix: 'Iware' },
+                    { namePrefix: 'POS' },
+                    { namePrefix: 'Printer' }
+                ],
+                optionalServices: printerServiceUUIDs
+            });
+
+            const server = await device.gatt.connect();
+            let targetCharacteristic = null;
+
+            // Coba ambil service berdasarkan daftar UUID yang umum, 
+            // atau fallback ke getPrimaryServices() yang kini sudah diizinkan oleh optionalServices
+            for (const uuid of printerServiceUUIDs) {
+                try {
+                    const service = await server.getPrimaryService(uuid);
+                    const characteristics = await service.getCharacteristics();
+                    for (const characteristic of characteristics) {
+                        if (characteristic.properties.write || characteristic.properties.writeWithoutResponse) {
+                            targetCharacteristic = characteristic;
+                            break;
+                        }
+                    }
+                    if (targetCharacteristic) break;
+                } catch (e) {
+                    // Lanjutkan jika UUID tertentu tidak ada pada printer yang sedang dikoneksikan
+                    continue;
+                }
+            }
+
+            // Jika belum ketemu lewat UUID standar, gunakan cara iterasi aman
+            if (!targetCharacteristic) {
                 const services = await server.getPrimaryServices();
-                let targetCharacteristic = null;
-
                 for (const service of services) {
                     const characteristics = await service.getCharacteristics();
                     for (const characteristic of characteristics) {
@@ -738,13 +775,23 @@
                     }
                     if (targetCharacteristic) break;
                 }
-
-                if (!targetCharacteristic) {
-                    throw new Error("Karakteristik write printer tidak ditemukan!");
-                }
-                bluetoothCharacteristic = targetCharacteristic;
             }
 
+            if (!targetCharacteristic) {
+                throw new Error("Karakteristik write printer tidak ditemukan pada perangkat ini!");
+            }
+            
+            bluetoothCharacteristic = targetCharacteristic;
+        }
+
+        // Lanjutkan proses enkoding ESC/POS dan perintah write data transaksi Anda di sini
+        console.log("Printer siap digunakan:", bluetoothCharacteristic);
+
+    } catch (error) {
+        console.error("Gagal menghubungkan printer:", error);
+        alert("Gagal terhubung ke printer: " + error.message);
+    }
+}
             const encoder = new TextEncoder();
             let commands = [];
 
